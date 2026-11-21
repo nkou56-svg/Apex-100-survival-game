@@ -1,0 +1,6 @@
+{
+  "name": "Apex 100: 3D Survival",
+  "description": "A 100-level 3D action-adventure survival game with procedural biomes, combat, coin collection, and an inter-level shopkeeper.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
