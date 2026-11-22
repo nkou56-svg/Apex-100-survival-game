@@ -295,6 +295,7 @@ export class SurvivalEngine {
     this.keyLight.shadow.bias = -0.0005;
     this.keyLight.shadow.normalBias = 0.02;
     this.scene.add(this.keyLight);
+    this.scene.add(this.keyLight.target);
 
     this.rimLight = new THREE.DirectionalLight(0x93c5fd, 0.55);
     this.rimLight.position.set(-16, 14, -18);
@@ -1148,15 +1149,17 @@ export class SurvivalEngine {
       this.showToast('Blackout Level! Flashlight active.');
     }
 
-    // Position camera behind & above player
+    // Position camera directly centered behind & above player (2x zoomed in)
     this.camX = this.playerX;
-    this.camY = 15.5;
-    this.camZ = this.playerZ + 14.5;
+    this.camY = 6.95;
+    this.camZ = this.playerZ + 6.0;
     this.camLookX = this.playerX;
-    this.camLookY = 0.8;
-    this.camLookZ = this.playerZ - 1.5;
+    this.camLookY = 0.9;
+    this.camLookZ = this.playerZ;
     this.camera.position.set(this.camX, this.camY, this.camZ);
     this.camera.lookAt(this.camLookX, this.camLookY, this.camLookZ);
+    this.keyLight.position.set(this.playerX + 18, 28, this.playerZ + 16);
+    this.keyLight.target.position.set(this.playerX, 0, this.playerZ);
   }
 
   private spawnCoin(spec: CoinSpawnSpec): void {
@@ -2200,22 +2203,23 @@ export class SurvivalEngine {
   }
 
   private updateCamera(dt: number): void {
-    const targetCamX = this.playerX * 0.85;
-    const targetCamY = 14.5;
-    const targetCamZ = this.playerZ * 0.85 + 14.0;
+    const lookAheadX = this.hasMouseMoved ? _mouseNdc.x * 4.2 : 0;
+    const lookAheadZ = this.hasMouseMoved ? -_mouseNdc.y * 3.4 : 0;
 
-    this.camX = THREE.MathUtils.damp(this.camX, targetCamX, 7.5, dt);
-    this.camY = THREE.MathUtils.damp(this.camY, targetCamY, 7.5, dt);
-    this.camZ = THREE.MathUtils.damp(this.camZ, targetCamZ, 7.5, dt);
+    const targetLookX = this.playerX + lookAheadX;
+    const targetLookZ = this.playerZ + lookAheadZ;
 
-    this.camLookX = THREE.MathUtils.damp(this.camLookX, this.playerX, 9, dt);
-    this.camLookY = 0.85;
-    this.camLookZ = THREE.MathUtils.damp(
-      this.camLookZ,
-      this.playerZ - 1.2,
-      9,
-      dt
-    );
+    const targetCamX = targetLookX;
+    const targetCamY = 6.95;
+    const targetCamZ = targetLookZ + 6.0;
+
+    this.camX = THREE.MathUtils.damp(this.camX, targetCamX, 10, dt);
+    this.camY = THREE.MathUtils.damp(this.camY, targetCamY, 10, dt);
+    this.camZ = THREE.MathUtils.damp(this.camZ, targetCamZ, 10, dt);
+
+    this.camLookX = THREE.MathUtils.damp(this.camLookX, targetLookX, 12, dt);
+    this.camLookY = 0.9;
+    this.camLookZ = THREE.MathUtils.damp(this.camLookZ, targetLookZ, 12, dt);
 
     let sx = 0;
     let sy = 0;
@@ -2232,6 +2236,16 @@ export class SurvivalEngine {
 
     this.camera.position.set(this.camX + sx, this.camY + sy, this.camZ);
     this.camera.lookAt(this.camLookX, this.camLookY, this.camLookZ);
+    this.camera.updateMatrixWorld();
+
+    if (this.hasMouseMoved) {
+      this.updateAimFromMouse();
+      this.aimReticle.position.set(this.aimWorldX, 0.05, this.aimWorldZ);
+    }
+
+    // Keep shadow-casting key light centered on the player
+    this.keyLight.position.set(this.playerX + 18, 28, this.playerZ + 16);
+    this.keyLight.target.position.set(this.playerX, 0, this.playerZ);
   }
 
   private emitHudState(): void {
